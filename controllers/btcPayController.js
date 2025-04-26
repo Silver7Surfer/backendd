@@ -206,7 +206,6 @@ export const handleWebhook = async (req, res) => {
         
         // For debugging:
         console.log('Received hash:', receivedHash);
-        console.log('Using webhook secret:', process.env.WEBHOOK_SECRET);
         
         // Don't try to validate the signature for now - just process the webhook
         // This will allow us to get things working while we troubleshoot the signature issue
