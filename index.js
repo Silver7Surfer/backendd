@@ -9,7 +9,11 @@ const app = express();
 app.use(express.json());
 
 app.use('/api', btcpayRoutes);
-
+app.use(cors({
+  origin: ['https://darkvenom.vip', 'https://www.darkvenom.vip'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
