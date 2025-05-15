@@ -94,7 +94,16 @@ const sendPaymentFailedNotification = async (invoiceId, reason) => {
 
 export const createInvoice = async (req, res) => {
   try {
-    const { amount, currency = 'USD', productId, title, customerEmail, redirectUrl, description } = req.body;
+    const { 
+      amount, 
+      currency = 'USD', 
+      productId, 
+      title, 
+      customerEmail, 
+      redirectUrl, 
+      description,
+      merchant // Added merchant parameter
+    } = req.body;
     
     if (!amount || amount <= 0) {
       return res.status(400).json({ error: 'Valid amount is required' });
@@ -111,24 +120,29 @@ export const createInvoice = async (req, res) => {
       metadata: {
         orderId: `order-${productId || Date.now()}`,
         buyerEmail: customerEmail || undefined,
+        merchant: merchant || 'default', // Include merchant in metadata
         
         // The magic structure for POS-style receipt
         itemCode: productId || 'product',
         itemDesc: title || productId || 'Product Purchase',
         posDataaa: {
           Gameid: title || productId || 'Product Purchase',
-          Description: description || `Payment for product: ${productId || 'Item'}`
+          Description: description || `Payment for product: ${productId || 'Item'}`,
+          Merchant: merchant || 'default' // Also include in posData
         }
       },
       checkout: {
         redirectURL: redirectUrl || process.env.CLIENT_URL || 'http://localhost:5173',
         defaultPaymentMethod: 'BTC'
       },
-      description: description || `Payment for product: ${productId || 'Item'}`,
+      description: merchant 
+        ? `${merchant.replace('_', ' ')} Payment: ${description || `For ${productId || 'Item'}`}` 
+        : (description || `Payment for product: ${productId || 'Item'}`),
       expiryTime: expiryTime.toISOString()
     };
     
     console.log('Creating invoice with data:', invoiceData);
+    console.log('Merchant:', merchant || 'default');
     
     // Make request to BTCPay Server API using the Greenfield API key
     const response = await axios.post(`${btcpayUrl}/api/v1/stores/${storeId}/invoices`, 
@@ -148,7 +162,8 @@ export const createInvoice = async (req, res) => {
       invoiceId: response.data.id,
       paymentUrl: response.data.checkoutLink,
       status: response.data.status,
-      expirationTime: response.data.expirationTime
+      expirationTime: response.data.expirationTime,
+      merchant: merchant || 'default' // Include merchant in response
     });
   } catch (error) {
     console.error('Error creating invoice:', error.response?.data || error.message);
